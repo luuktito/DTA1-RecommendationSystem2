@@ -43,6 +43,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Algorithms\Deviation.cs" />
+    <Compile Include="Parser\Parser.cs" />
+    <Compile Include="Prediction\Prediction.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
