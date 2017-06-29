@@ -13,15 +13,21 @@ namespace DTA1_RecommendationSystem2.Utils
             this.loopUpTable = loopUpTable;
         }
 
-        public T this[int x, int y]
+        public T this[int x, int y, bool useLookUp]
         {
             get
             {
-                return matrix[loopUpTable[x], loopUpTable[y]];
+                if (useLookUp)
+                    return matrix[loopUpTable[x], loopUpTable[y]];
+                else
+                    return matrix[x,y];
             }
             set
             {
-               matrix[loopUpTable[x], loopUpTable[y]] = value;
+                if (useLookUp)
+                    matrix[loopUpTable[x], loopUpTable[y]] = value;
+                else
+                    matrix[x,y] = value;
             }
         }
     }

@@ -1,5 +1,6 @@
 ﻿using System;
 using DTA1_RecommendationSystem2.Algorithms;
+using System.Diagnostics;
 
 namespace DTA1_RecommendationSystem2
 {
@@ -10,9 +11,7 @@ namespace DTA1_RecommendationSystem2
             Console.WriteLine("#Assignment 2: Item-Item ");
             Console.WriteLine();
 
-            var ratings = Parser.Parser.Parse(',', "userItem.data");
-
-            var itemItem = new ItemItem(ratings);
+            var itemItem = new ItemItem(',', "userItem.data");
             itemItem.CreateDeviationMatrix();
 
 
@@ -51,15 +50,25 @@ namespace DTA1_RecommendationSystem2
             Console.WriteLine();
 
 
-            Console.WriteLine("#Calculation the deviation matrix for the movie lens dataset, this might take a minute :(");
-            Console.WriteLine();
+            Console.WriteLine("#Calculating the deviation matrix for the movie lens dataset");
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
 
-            var ratingsMovie = Parser.Parser.Parse('\t', "u.data");
-           
-            var itemItemMovies = new ItemItem(ratingsMovie);
+            var itemItemMovies = new ItemItem('\t', "u.data");
             itemItemMovies.CreateDeviationMatrix();
 
+            stopwatch.Stop();
+            Console.WriteLine("Finished computing deviations in " + stopwatch.Elapsed);
+
+            stopwatch = new Stopwatch();
+            stopwatch.Start();
+
             var top8RecommendationsUser186 = itemItemMovies.GetPredictionMultiple(186, 5);
+
+            stopwatch.Stop();
+            Console.WriteLine("Finished computing predictions in " + stopwatch.Elapsed);
+            Console.WriteLine();
+
             Console.WriteLine("#The top 5 predicted ratings for user 186 are as follows:");
             foreach (var movie in top8RecommendationsUser186)
             {

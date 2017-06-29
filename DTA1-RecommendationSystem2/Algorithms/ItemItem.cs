@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using DTA1_RecommendationSystem2.Utils;
+using System.Diagnostics;
 
 namespace DTA1_RecommendationSystem2.Algorithms
 {
@@ -10,10 +11,13 @@ namespace DTA1_RecommendationSystem2.Algorithms
         private Dictionary<int, Dictionary<int, double>> ratings;
         private Matrix<Tuple<double, int>> deviationMatrix;
         private List<int> allItems;
+        private Dictionary<int, HashSet<int>> itemAndUsers;
 
-        public ItemItem(Dictionary<int, Dictionary<int, double>> ratings)
+        public ItemItem(char delimiter, string pathDictionary)
         {
-            this.ratings = ratings;
+            var parseResult = Parser.Parser.Parse(delimiter, pathDictionary);
+            ratings = parseResult.Item1;
+            itemAndUsers = parseResult.Item2;
             allItems = GetItems();
             deviationMatrix = new Matrix<Tuple<double, int>>(allItems.Count, allItems.Count, GetLookUpTables());
         }
@@ -30,7 +34,7 @@ namespace DTA1_RecommendationSystem2.Algorithms
                         allItems.Add(itemId);
                 }
             }
-
+            allItems.Sort();
             return allItems;
         }
 
@@ -57,32 +61,34 @@ namespace DTA1_RecommendationSystem2.Algorithms
                     var currentDeviation = 0.0;
                     var currentWeight = 0;
 
-                    var mirrorTuple = new Tuple<int, int>(currentItemY, currentItemX);
-                    if (deviationMatrix[currentItemY, currentItemX] != null)
+                    if (currentItemX != currentItemY)
                     {
-                        currentDeviation = deviationMatrix[currentItemY, currentItemX].Item1 * -1;
-                        currentWeight = deviationMatrix[currentItemY, currentItemX].Item2;
-                    }
-                    else
-                    {
-                        if (currentItemX != currentItemY)
+                        if (i > j)
                         {
-                            foreach (var user in ratings)
+                            var oldDeviationTuple = deviationMatrix[j, i, false];
+                            currentDeviation = oldDeviationTuple.Item1 * -1;
+                            currentWeight = oldDeviationTuple.Item2;
+                        }
+                        else
+                        {
+                            var itemXUsers = itemAndUsers[currentItemX];
+                            var itemYUsers = itemAndUsers[currentItemY];
+                            foreach (var user in itemXUsers)
                             {
-                                if (user.Value.ContainsKey(currentItemX) && user.Value.ContainsKey(currentItemY))
+                                if (itemYUsers.Contains(user))
                                 {
-                                    currentDeviation += (user.Value[currentItemX] - user.Value[currentItemY]);
+                                    var userData = ratings[user];
+                                    currentDeviation += (userData[currentItemX] - userData[currentItemY]);
                                     currentWeight += 1;
                                 }
                             }
-                        }
 
-                        currentDeviation = (currentWeight != 0) ? currentDeviation / currentWeight : 0;
+                            currentDeviation = (currentWeight != 0) ? currentDeviation / currentWeight : 0;
+                        }
                     }
 
-                    var combinationTuple = new Tuple<int, int>(currentItemX, currentItemY);
                     var deviationWeight = new Tuple<double, int>(currentDeviation, currentWeight);
-                    deviationMatrix[currentItemX, currentItemY] = deviationWeight;
+                    deviationMatrix[i, j, false] = deviationWeight;
                 }
             }
         }
@@ -95,14 +101,14 @@ namespace DTA1_RecommendationSystem2.Algorithms
             {
                 if (item != itemId && user.ContainsKey(item))
                 {
-                    var oldDeviationTuple = deviationMatrix[itemId, item];
+                    var oldDeviationTuple = deviationMatrix[itemId, item, true];
                     var currentDeviation = oldDeviationTuple.Item1;
                     var currentWeight = oldDeviationTuple.Item2;
 
                     currentDeviation = ((currentDeviation * currentWeight) + (newRating - user[item])) / (currentWeight + 1);
 
-                    deviationMatrix[itemId, item] = new Tuple<double, int>(currentDeviation, (currentWeight + 1));
-                    deviationMatrix[item, itemId] = new Tuple<double, int>(currentDeviation * -1, (currentWeight + 1));
+                    deviationMatrix[itemId, item, true] = new Tuple<double, int>(currentDeviation, (currentWeight + 1));
+                    deviationMatrix[item, itemId, true] = new Tuple<double, int>(currentDeviation * -1, (currentWeight + 1));
                 }
 
             }
@@ -117,7 +123,7 @@ namespace DTA1_RecommendationSystem2.Algorithms
             {
                 if (itemId != rating.Key)
                 {
-                    var deviationTuple = deviationMatrix[itemId, rating.Key];
+                    var deviationTuple = deviationMatrix[itemId, rating.Key, true];
                     currentRating += ((rating.Value + deviationTuple.Item1) * deviationTuple.Item2);
                     currentWeight += deviationTuple.Item2;
                 }
